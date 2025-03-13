@@ -4,7 +4,7 @@ This repository contains enhanced versions of the original [doobidoo/mcp-memory-
 
 ## Overview
 
-The MCP Memory Service provides AI assistants with a persistent semantic memory system using the Model Context Protocol (MCP). This enhanced version adds robust operation scripts, improved error handling, and automatic monitoring to the original implementation.
+The MCP Memory Service provides AI assistants with a persistent semantic memory system using the Model Context Protocol (MCP). This enhanced version adds path resolution improvements, better error handling, and simplified operation scripts to the original implementation.
 
 ## Relationship to Original Implementation
 
@@ -12,12 +12,11 @@ This repository builds upon the reference implementation by [doobidoo](https://g
 
 ## Enhanced Features
 
-### 1. Robust Startup Scripts
+### 1. Simple Standalone Operation
 
-- **start_memory_service.sh**: Basic service startup with better path resolution
-- **persistent_memory_service.sh**: Background service with automatic restart capability
-- **debug_memory_service.sh**: Interactive debugging mode
-- **stop_memory_service.sh**: Clean process termination
+- **start_basic.sh**: Minimal service startup with proper path resolution
+- **stop_basic.sh**: Clean process termination with PID tracking
+- **Database Path Resolution**: Automatically finds and creates storage locations
 
 ### 2. Improved Path Resolution
 
@@ -31,12 +30,6 @@ This repository builds upon the reference implementation by [doobidoo](https://g
 - Detailed validation and error reporting
 - Graceful failure handling
 - Better logging with timestamps and context
-
-### 4. Watchdog Monitoring
-
-- Automatic service monitoring
-- Crash detection and recovery
-- Process supervision
 
 ## Installation
 
@@ -59,43 +52,70 @@ This repository builds upon the reference implementation by [doobidoo](https://g
 
 ## Usage
 
-Start the service using one of the provided scripts:
+### Basic Operation
 
-### Basic Mode
-
+Starting the service:
 ```bash
-./start_memory_service.sh
+./start_basic.sh
 ```
 
-This starts the service with basic logging and error handling.
+This script:
+- Sets the PYTHONPATH to include the src directory
+- Runs the server module in the background
+- Saves the PID for later termination
+- Creates logs in the logs/ directory
 
-### Persistent Mode
-
+Stopping the service:
 ```bash
-./persistent_memory_service.sh
+./stop_basic.sh
 ```
 
-Starts the service with watchdog monitoring for automatic restart on failure.
+This script:
+- Checks if the process is running
+- Terminates it gracefully
+- Removes the PID file after successful termination
 
-### Debug Mode
+### Process Management
 
-```bash
-./debug_memory_service.sh
-```
-
-Runs the service in the foreground with verbose logging.
-
-### Stopping the Service
+#### Checking Service Status
 
 ```bash
-./stop_memory_service.sh
+# Check if service is running using the saved PID
+ps -p $(cat logs/server.pid) > /dev/null && echo "Running" || echo "Not running"
+
+# View the service logs
+tail -f logs/memory_service.log
 ```
 
-Gracefully terminates the running service.
+#### Handling Orphan Processes
+
+If you encounter log file overwrites or other process-related issues:
+
+1. Check for multiple process instances:
+   ```bash
+   ps aux | grep -E "mcp_memory_service|watchdog.sh" | grep -v grep
+   ```
+
+2. Kill any orphaned processes:
+   ```bash
+   kill -9 $(ps aux | grep -E "mcp_memory_service|watchdog.sh" | grep -v grep | awk '{print $2}')
+   ```
+
+3. Remove any stale PID files:
+   ```bash
+   rm -f logs/server.pid
+   ```
+
+4. Restart with the simple script:
+   ```bash
+   ./start_basic.sh
+   ```
+
+For detailed process management guidelines, see [Process Management Documentation](docs/process_management.md).
 
 ## Key Enhancements
 
-### Path Resolution
+### Database Path Resolution
 
 The enhanced implementation adds robust path resolution with fallback options:
 
@@ -118,34 +138,12 @@ def get_base_directory() -> str:
     return validate_and_create_path(base)
 ```
 
-### Watchdog Implementation
-
-Automatic service monitoring and recovery:
-
-```bash
-# Watchdog implementation
-cat > logs/watchdog.sh << EOF
-#!/bin/bash
-while true; do
-    if ! ps -p \$(cat $(pwd)/logs/server.pid) > /dev/null; then
-        echo "\$(date) - Server crashed, restarting..." >> $(pwd)/logs/watchdog.log
-        $(pwd)/persistent_memory_service.sh
-        exit 0
-    fi
-    sleep 10
-done
-EOF
-
-chmod +x logs/watchdog.sh
-nohup logs/watchdog.sh > logs/watchdog.log 2>&1 &
-```
-
 ## Configuration
 
 ### Environment Variables
 
 - `MCP_MEMORY_BASE_DIR`: Set custom base directory for storage
-- `PYTHONUNBUFFERED=1`: Force unbuffered Python output for better logging
+- `PYTHONPATH`: Must include the src directory
 
 ### Default Storage Locations
 
