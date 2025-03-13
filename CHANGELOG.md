@@ -2,12 +2,25 @@
 
 All notable changes to the MCP Memory Service Enhanced project will be documented in this file.
 
+## [0.2.1] - 2025-03-13
+
+### Added
+- Basic startup and shutdown scripts for minimal configuration
+- Streamlined process management without watchdog dependency
+
+### Changed
+- Simplified startup approach for better reliability
+- Improved documentation with latest findings
+
+### Fixed
+- Resolved process termination issues
+- Fixed recursive startup in watchdog implementation
+
 ## [0.2.0] - 2025-03-13
 
 ### Added
 - Robust startup scripts with different operation modes
 - Enhanced path resolution with multiple fallback options
-- Watchdog functionality for automatic server restart
 - Expanded logging and error handling
 - Database validation and repair utilities
 
